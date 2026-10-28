@@ -1,0 +1,1855 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fluency — Dominio del Inglés con el Método Krashen</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase SDK Compat -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <!-- PDF.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script>
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+                tailwind.config = {
+                    darkMode: 'class',
+                    theme: {
+                        extend: {
+                            colors: {
+                                cyanNeon: '#00f2fe',
+                                blueElectric: '#4facfe',
+                                greenNeon: '#00df89',
+                                magentaSoft: '#ff6584',
+                                darkBg: '#090d16',
+                                darkCard: '#131c31',
+                                axolotlPink: '#ff7597',
+                                axolotlPurple: '#9b51e0'
+                            },
+                            fontFamily: { sans: ['Inter', 'sans-serif'] }
+                        }
+                    }
+                }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --font-scale: 1;
+        }
+
+        html {
+            font-size: calc(16px * var(--font-scale));
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #4facfe;
+            border-radius: 3px;
+        }
+
+        .dark ::-webkit-scrollbar-thumb {
+            background: #253354;
+        }
+
+        .lumi-svg-container {
+            filter: drop-shadow(0 0 10px rgba(0, 242, 254, 0.35));
+            transition: transform 0.3s ease;
+        }
+
+            .lumi-svg-container:hover {
+                transform: scale(1.05) rotate(2deg);
+            }
+
+        .pulse-recording {
+            animation: pulse-red 1.5s infinite;
+        }
+
+        @keyframes pulse-red {
+            0% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+
+            70% {
+                box-shadow: 0 0 0 12px rgba(239, 68, 68, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+            }
+        }
+    </style>
+</head>
+<body class="h-full bg-slate-50 text-slate-800 dark:bg-darkBg dark:text-slate-100 transition-colors duration-300">
+
+    <div id="app" class="min-h-screen flex flex-col md:flex-row">
+        <!-- AUTH SCREEN -->
+        <div id="authScreen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md hidden">
+            <div class="max-w-md w-full bg-white dark:bg-darkCard rounded-3xl shadow-2xl p-8 border border-slate-200 dark:border-slate-800 relative overflow-hidden">
+                <div class="absolute -top-12 -right-12 w-32 h-32 bg-cyanNeon/20 rounded-full blur-2xl"></div>
+                <div class="absolute -bottom-12 -left-12 w-32 h-32 bg-magentaSoft/20 rounded-full blur-2xl"></div>
+
+                <div class="text-center mb-8 relative z-10">
+                    <div id="lumi-auth" class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-tr from-axolotlPink via-magentaSoft to-axolotlPurple text-white mb-4 shadow-lg shadow-pink-500/30"></div>
+                    <h1 class="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-cyanNeon via-blueElectric to-magentaSoft bg-clip-text text-transparent">
+                        Fluency
+                    </h1>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Aprende inglés natural sin repeticiones</p>
+                </div>
+
+                <div class="flex border-b border-slate-200 dark:border-slate-800 mb-6">
+                    <button id="tabLoginBtn" onclick="switchAuthTab('login')" class="flex-1 pb-3 text-center font-semibold text-cyanNeon border-b-2 border-cyanNeon transition-all"><i class="fa-solid fa-right-to-bracket mr-1.5"></i> Iniciar Sesión</button>
+                    <button id="tabRegisterBtn" onclick="switchAuthTab('register')" class="flex-1 pb-3 text-center font-semibold text-slate-400 border-b-2 border-transparent transition-all"><i class="fa-solid fa-user-plus mr-1.5"></i> Crear Cuenta</button>
+                </div>
+
+                <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Nombre de Usuario</label>
+                        <input type="text" id="loginUsername" required class="w-full px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-cyanNeon text-slate-800 dark:text-slate-100">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Contraseña</label>
+                        <input type="password" id="loginPassword" required class="w-full px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-cyanNeon text-slate-800 dark:text-slate-100">
+                    </div>
+                    <button type="submit" class="w-full py-3.5 px-4 bg-gradient-to-r from-axolotlPurple to-cyanNeon hover:opacity-90 text-white dark:text-slate-950 font-bold rounded-xl shadow-lg shadow-cyan-500/25 transition transform active:scale-95 flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <span>Entrar a Fluency</span>
+                    </button>
+                </form>
+
+                <form id="registerForm" onsubmit="handleRegister(event)" class="space-y-4 hidden">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Tu Nombre o Apodo</label>
+                        <input type="text" id="regName" required class="w-full px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-cyanNeon text-slate-800 dark:text-slate-100">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Usuario</label>
+                        <input type="text" id="regUsername" required class="w-full px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-cyanNeon text-slate-800 dark:text-slate-100">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Contraseña</label>
+                        <input type="password" id="regPassword" required class="w-full px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-cyanNeon text-slate-800 dark:text-slate-100">
+                    </div>
+                    <button type="submit" class="w-full py-3.5 px-4 bg-gradient-to-r from-axolotlPurple to-cyanNeon hover:opacity-90 text-white dark:text-slate-950 font-bold rounded-xl shadow-lg shadow-green-500/25 transition transform active:scale-95 flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-rocket"></i>
+                        <span>Registrarme Ahora</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- SIDEBAR -->
+        <aside id="sidebar" class="w-full md:w-64 bg-white dark:bg-darkCard border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-800 flex-shrink-0 flex flex-col justify-between p-4 z-20">
+            <div>
+                <div class="flex items-center justify-between mb-6 px-2">
+                    <div class="flex items-center space-x-3">
+                        <div id="lumi-logo" class="w-10 h-10 rounded-xl bg-gradient-to-tr from-axolotlPink via-magentaSoft to-axolotlPurple text-white flex items-center justify-center shadow-md shadow-pink-500/20"></div>
+                        <span class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-cyanNeon to-blueElectric bg-clip-text text-transparent">Fluency</span>
+                    </div>
+                    <button onclick="toggleDarkMode()" class="p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 transition">
+                        <i id="themeIcon" class="fa-solid fa-moon"></i>
+                    </button>
+                </div>
+
+                <div id="userBadge" class="mb-6 p-3 rounded-2xl bg-slate-100 dark:bg-slate-900/60 border border-slate-200/50 dark:border-slate-800/50 flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-full bg-cyanNeon/20 text-cyanNeon flex items-center justify-center font-bold text-sm">
+                        <i class="fa-solid fa-user-astronaut"></i>
+                    </div>
+                    <div class="overflow-hidden flex-1">
+                        <p id="navUserName" class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">Cargando...</p>
+                        <div class="flex items-center justify-between mt-0.5">
+                            <p id="navUserLevel" class="text-[10px] text-cyanNeon font-semibold uppercase tracking-wider">Nivel: A1-A2</p>
+                            <span class="text-[10px] font-bold text-orange-400 flex items-center gap-0.5" title="Racha actual">
+                                <i class="fa-solid fa-fire"></i> <span id="navStreakCount">0d</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <nav class="space-y-1.5">
+                    <button onclick="showSection('inicio')" id="nav-inicio" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all bg-gradient-to-r from-axolotlPurple to-cyanNeon text-white dark:text-slate-950 shadow-lg shadow-cyan-500/20">
+                        <i class="fa-solid fa-house-chimney w-5 text-center text-base"></i>
+                        <span>Inicio</span>
+                    </button>
+                    <button onclick="showSection('escucha')" id="nav-escucha" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all">
+                        <i class="fa-solid fa-headphones-simple w-5 text-center text-base"></i>
+                        <span>Escucha Activa</span>
+                    </button>
+                    <button onclick="showSection('conversacion')" id="nav-conversacion" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all">
+                        <i class="fa-solid fa-comments w-5 text-center text-base"></i>
+                        <span>Conversación Interactiva</span>
+                    </button>
+                    <button onclick="showSection('shadowing')" id="nav-shadowing" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all">
+                        <i class="fa-solid fa-microphone-lines w-5 text-center text-base"></i>
+                        <span>Shadowing con Voz</span>
+                    </button>
+                    <button onclick="showSection('contexto')" id="nav-contexto" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all">
+                        <i class="fa-solid fa-book-bookmark w-5 text-center text-base"></i>
+                        <span>Frases en Contexto</span>
+                    </button>
+                    <button onclick="showSection('traductor')" id="nav-traductor" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all">
+                        <i class="fa-solid fa-language w-5 text-center text-base"></i>
+                        <span>🌐 Traductor</span>
+                    </button>
+                    <button onclick="showSection('progreso')" id="nav-progreso" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all">
+                        <i class="fa-solid fa-chart-pie w-5 text-center text-base"></i>
+                        <span>Mi Progreso</span>
+                    </button>
+                    <button onclick="showSection('configuracion')" id="nav-configuracion" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all">
+                        <i class="fa-solid fa-sliders w-5 text-center text-base"></i>
+                        <span>Configuración</span>
+                    </button>
+                </nav>
+            </div>
+
+            <div class="pt-4 border-t border-slate-200 dark:border-slate-800 mt-4">
+                <button onclick="logout()" class="w-full flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition">
+                    <i class="fa-solid fa-power-off text-sm"></i>
+                    <span>Cerrar Sesión</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="flex-1 overflow-y-auto p-4 md:p-8">
+            <div class="max-w-5xl mx-auto space-y-8">
+
+                <!-- 📌 INICIO -->
+                <section id="sec-inicio" class="section-block space-y-6">
+                    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-axolotlPurple via-blueElectric to-cyanNeon p-8 text-white dark:text-slate-950 shadow-2xl">
+                        <div class="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+                            <div class="max-w-xl">
+                                <span class="inline-flex items-center space-x-1.5 px-3.5 py-1 bg-white/20 dark:bg-white/30 backdrop-blur-md rounded-full text-xs font-bold tracking-wider uppercase mb-3 text-white dark:text-slate-950">
+                                    <i class="fa-solid fa-atom"></i>
+                                    <span>Método Científico de Adquisición</span>
+                                </span>
+                                <h2 id="welcomeGreeting" class="text-3xl md:text-4xl font-extrabold mb-3">¡Hola! Qué bueno verte de nuevo ✨</h2>
+                                <p class="text-white/90 dark:text-slate-900/90 text-sm md:text-base leading-relaxed mb-6 font-medium">
+                                    Sistema anti-repetición sincronizado con Firestore, Repetición Espaciada (SRS) y evaluación adaptativa.
+                                </p>
+                                <div class="bg-slate-900/30 dark:bg-slate-950/20 backdrop-blur-md p-4 rounded-2xl border border-white/20">
+                                    <label class="block text-xs font-bold uppercase tracking-wider mb-2 text-white dark:text-slate-950">Selecciona tu Nivel Actual:</label>
+                                    <div class="grid grid-cols-3 gap-2">
+                                        <button onclick="setUserLevel('A1-A2')" id="lvlBtn-A1-A2" class="lvl-btn py-2.5 px-3 rounded-xl font-bold text-xs text-center border border-white/40 transition hover:bg-white/30 text-white dark:text-slate-950">A1-A2<br><span class="text-[10px] font-normal opacity-80">Principiante</span></button>
+                                        <button onclick="setUserLevel('B1-B2')" id="lvlBtn-B1-B2" class="lvl-btn py-2.5 px-3 rounded-xl font-bold text-xs text-center border border-white/40 transition hover:bg-white/30 text-white dark:text-slate-950">B1-B2<br><span class="text-[10px] font-normal opacity-80">Intermedio</span></button>
+                                        <button onclick="setUserLevel('C1-C2')" id="lvlBtn-C1-C2" class="lvl-btn py-2.5 px-3 rounded-xl font-bold text-xs text-center border border-white/40 transition hover:bg-white/30 text-white dark:text-slate-950">C1-C2<br><span class="text-[10px] font-normal opacity-80">Avanzado</span></button>
+                                    </div>
+                                </div>
+                                <div class="mt-6 flex flex-wrap gap-3">
+                                    <button onclick="showSection('escucha')" class="inline-flex items-center space-x-2 px-6 py-3.5 bg-slate-900 text-white font-extrabold rounded-2xl shadow-lg hover:bg-slate-800 transition transform active:scale-95">
+                                        <i class="fa-solid fa-play text-cyanNeon"></i>
+                                        <span>¡Escuchar Historias!</span>
+                                    </button>
+                                    <button onclick="showSection('configuracion')" class="inline-flex items-center space-x-2 px-6 py-3.5 bg-slate-950/40 text-white font-extrabold rounded-2xl border border-white/30 shadow-lg hover:bg-white/20 transition transform active:scale-95">
+                                        <i class="fa-solid fa-sliders"></i>
+                                        <span>Ir a Carga de Archivos</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="flex flex-col items-center text-center p-4 bg-slate-900/40 rounded-2xl border border-white/20 min-w-[200px]">
+                                <div id="lumi-inicio" class="w-32 h-32"></div>
+                                <p class="mt-2 text-xs font-bold text-cyanNeon bg-slate-950/60 px-3 py-1 rounded-full">"¡Firestore Conectado!"</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 🎧 ESCUCHA ACTIVA -->
+                <section id="sec-escucha" class="section-block space-y-6 hidden">
+                    <div class="bg-white dark:bg-darkCard rounded-3xl p-6 md:p-8 shadow-xl border border-slate-200 dark:border-slate-800">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                            <div class="flex items-center space-x-4">
+                                <div id="lumi-escucha" class="w-16 h-16 shrink-0"></div>
+                                <div>
+                                    <span class="px-3 py-1 bg-cyanNeon/10 text-cyanNeon rounded-full text-xs font-bold uppercase tracking-wider inline-flex items-center space-x-1">
+                                        <i class="fa-solid fa-podcast"></i>
+                                        <span id="escuchaLevelBadge">Nivel Actual: A1-A2</span>
+                                    </span>
+                                    <h3 class="text-2xl font-extrabold text-slate-800 dark:text-slate-100 mt-2">Podcast Stories</h3>
+                                </div>
+                            </div>
+                            <button onclick="nextActiveStory()" class="px-5 py-3 bg-gradient-to-r from-axolotlPurple to-cyanNeon text-white dark:text-slate-950 font-bold rounded-xl shadow-lg shadow-cyan-500/20 hover:opacity-90 transition transform active:scale-95 flex items-center space-x-2">
+                                <i class="fa-solid fa-rotate-right"></i>
+                                <span>Siguiente Historia (Sin Repetir)</span>
+                            </button>
+                        </div>
+
+                        <div class="my-6 p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 space-y-4">
+                            <h4 id="storyTitle" class="text-xl font-extrabold text-cyanNeon dark:text-cyan-400 flex items-center space-x-2">
+                                <i class="fa-solid fa-book-open-reader"></i>
+                                <span>Título</span>
+                            </h4>
+                            <div class="text-lg md:text-xl font-semibold tracking-wide text-slate-800 dark:text-slate-100 leading-relaxed" id="escuchaDisplay"></div>
+                            <div class="pt-3 border-t border-slate-200 dark:border-slate-800">
+                                <p class="text-xs uppercase font-bold text-slate-400 mb-1">Traducción al español:</p>
+                                <p id="escuchaTranslation" class="text-sm font-medium text-slate-600 dark:text-slate-300 italic"></p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center bg-slate-100 dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800">
+                            <div class="flex items-center justify-center space-x-3">
+                                <button onclick="toggleActiveStorySpeech(this)" id="storyPlayBtn" class="w-12 h-12 rounded-full bg-cyanNeon text-slate-950 flex items-center justify-center text-lg shadow-md hover:bg-cyan-400 transition transform active:scale-90">
+                                    <i class="fa-solid fa-volume-high ml-0.5" id="storyPlayIcon"></i>
+                                </button>
+                                <button onclick="pauseActiveStory()" class="w-12 h-12 rounded-full bg-slate-300 dark:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center text-lg hover:bg-slate-400 transition">
+                                    <i class="fa-solid fa-volume-xmark"></i>
+                                </button>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <i class="fa-solid fa-gauge-high text-cyanNeon"></i>
+                                <label class="text-xs font-bold text-slate-500">Velocidad:</label>
+                                <select id="activeSpeed" class="flex-1 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold">
+                                    <option value="0.75">0.75x (Lento)</option>
+                                    <option value="1.0" selected>1.0x (Normal)</option>
+                                    <option value="1.25">1.25x (Rápido)</option>
+                                </select>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <i class="fa-solid fa-microphone-lines text-cyanNeon"></i>
+                                <label class="text-xs font-bold text-slate-500">Voz:</label>
+                                <select id="activeVoice" class="flex-1 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold truncate"></select>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 🗣️ CONVERSACIÓN INTERACTIVA CON FEEDBACK GRAMATICAL -->
+                <section id="sec-conversacion" class="section-block space-y-6 hidden">
+                    <div class="bg-white dark:bg-darkCard rounded-3xl p-6 md:p-8 shadow-xl border border-slate-200 dark:border-slate-800">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                            <div class="flex items-center space-x-4">
+                                <div id="lumi-conversacion" class="w-16 h-16 shrink-0"></div>
+                                <div>
+                                    <span class="px-3 py-1 bg-greenNeon/10 text-greenNeon rounded-full text-xs font-bold uppercase tracking-wider inline-flex items-center space-x-1">
+                                        <i class="fa-solid fa-comments"></i>
+                                        <span>Conversación Libre e Inteligente</span>
+                                    </span>
+                                    <h3 class="text-2xl font-extrabold text-slate-800 dark:text-slate-100 mt-2">Práctica Libre de Conversación</h3>
+                                </div>
+                            </div>
+                            <button onclick="resetChat()" class="px-4 py-2 bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl hover:bg-slate-200 transition flex items-center space-x-2">
+                                <i class="fa-solid fa-arrow-rotate-left"></i>
+                                <span>Reiniciar Hilo</span>
+                            </button>
+                        </div>
+
+                        <!-- Indicador de Conversación Libre -->
+                        <div class="mb-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                            <p class="text-xs font-bold text-slate-500 dark:text-slate-400">
+                                ✨ Puedes hablar de <strong>cualquier tema</strong>. Lumi analizará tus oraciones y te ofrecerá retroalimentación gramatical en tiempo real.
+                            </p>
+                        </div>
+
+                        <!-- Ventana de Chat -->
+                        <div id="chatWindow" class="h-80 overflow-y-auto p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 mb-4"></div>
+
+                        <!-- Formulario de Entrada con Micrófono -->
+                        <form onsubmit="handleSendMessage(event)" class="flex items-center space-x-2">
+                            <input type="text" id="chatInput" placeholder="Escribe o habla libremente sobre cualquier tema..." required class="flex-1 px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-cyanNeon text-sm text-slate-800 dark:text-slate-100">
+                            <button type="button" onclick="startVoiceChatRecognition()" id="chatMicBtn" class="px-4 py-3 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold hover:bg-cyanNeon hover:text-slate-950 transition">
+                                <i class="fa-solid fa-microphone" id="chatMicIcon"></i>
+                            </button>
+                            <button type="submit" class="px-5 py-3 rounded-xl bg-gradient-to-r from-axolotlPurple to-cyanNeon text-white dark:text-slate-950 font-bold text-sm hover:opacity-90 transition shadow-md">
+                                <i class="fa-solid fa-paper-plane"></i>
+                            </button>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- 🗣️ SHADOWING CON MICRÓFONO Y EVALUACIÓN PALABRA POR PALABRA -->
+                <section id="sec-shadowing" class="section-block space-y-6 hidden">
+                    <div class="bg-white dark:bg-darkCard rounded-3xl p-6 md:p-8 shadow-xl border border-slate-200 dark:border-slate-800">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                            <div class="flex items-center space-x-4">
+                                <div id="lumi-shadowing" class="w-16 h-16 shrink-0"></div>
+                                <div>
+                                    <span class="px-3 py-1 bg-magentaSoft/10 text-magentaSoft rounded-full text-xs font-bold uppercase tracking-wider inline-flex items-center space-x-1">
+                                        <i class="fa-solid fa-volume-high"></i>
+                                        <span>Shadowing con Análisis Palabra por Palabra</span>
+                                    </span>
+                                    <h3 class="text-2xl font-extrabold text-slate-800 dark:text-slate-100 mt-2">Práctica de Pronunciación Interactiva</h3>
+                                </div>
+                            </div>
+                            <button onclick="nextShadowingPhrase()" class="px-5 py-3 bg-gradient-to-r from-magentaSoft to-axolotlPurple text-white font-bold rounded-xl shadow-lg shadow-pink-500/20 hover:opacity-90 transition transform active:scale-95 flex items-center space-x-2">
+                                <i class="fa-solid fa-shuffle"></i>
+                                <span>Siguiente Frase (Única)</span>
+                            </button>
+                        </div>
+
+                        <div class="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 text-center space-y-4">
+                            <p class="text-xs uppercase tracking-wider font-bold text-slate-400">Escucha la frase modelo y grábate repitiéndola:</p>
+                            <p id="shadowingTarget" class="text-2xl font-extrabold text-slate-800 dark:text-slate-100">Cargando frase...</p>
+                            <p id="shadowingTranslation" class="text-sm font-medium text-slate-500 italic">Cargando traducción...</p>
+
+                            <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
+                                <button onclick="playShadowingTargetToggle(this)" class="inline-flex items-center space-x-2 px-5 py-3 bg-slate-200 dark:bg-slate-800 rounded-xl text-xs font-bold hover:bg-cyanNeon hover:text-slate-950 transition border border-slate-300 dark:border-slate-700">
+                                    <i class="fa-solid fa-volume-high"></i>
+                                    <span>Escuchar Modelo</span>
+                                </button>
+                                <button onclick="toggleRecordingShadowing()" id="btnRecordShadowing" class="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl text-xs font-bold hover:opacity-90 transition shadow-lg shadow-red-500/20">
+                                    <i class="fa-solid fa-microphone" id="shadowMicIcon"></i>
+                                    <span id="shadowMicStatus">Grabar y Evaluar Mi Voz</span>
+                                </button>
+                            </div>
+
+                            <div id="shadowingResultBox" class="hidden mt-4 p-5 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-left space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-bold uppercase text-slate-400">Desglose de Pronunciación:</span>
+                                    <span id="shadowScoreBadge" class="px-3 py-1 rounded-full text-xs font-extrabold text-slate-950 bg-greenNeon">0% Precisión</span>
+                                </div>
+                                <div id="shadowSpokenText" class="text-lg font-bold leading-relaxed">"..."</div>
+                                <p id="shadowFeedbackText" class="text-xs font-semibold text-slate-500"></p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 📝 FRASES EN CONTEXTO CON MÓDULO SRS Y FILTRO DE FRASES CORTAS -->
+                <section id="sec-contexto" class="section-block space-y-6 hidden">
+                    <div class="bg-white dark:bg-darkCard rounded-3xl p-6 md:p-8 shadow-xl border border-slate-200 dark:border-slate-800">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                            <div class="flex items-center space-x-4">
+                                <div id="lumi-contexto" class="w-16 h-16 shrink-0"></div>
+                                <div>
+                                    <span class="px-3 py-1 bg-blueElectric/10 text-blueElectric rounded-full text-xs font-bold uppercase tracking-wider inline-flex items-center space-x-1">
+                                        <i class="fa-solid fa-brain"></i>
+                                        <span>Repetición Espaciada (SRS / Memoria)</span>
+                                    </span>
+                                    <h3 class="text-2xl font-extrabold text-slate-800 dark:text-slate-100 mt-2">Frases y Diálogos en Contexto</h3>
+                                </div>
+                            </div>
+                            <button id="btnFilterShort" onclick="toggleShortPhrasesFilter()" class="px-4 py-2.5 rounded-xl text-xs font-bold transition bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-cyanNeon flex items-center space-x-2">
+                                <i class="fa-solid fa-bolt text-yellow-400"></i>
+                                <span id="lblFilterShort">Filtrar: Solo Frases Cortas (⚡ Vida Diaria)</span>
+                            </button>
+                        </div>
+
+                        <div class="flex flex-wrap gap-2 mb-6" id="contextTabs"></div>
+
+                        <div class="p-8 rounded-3xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 space-y-4">
+                            <div class="flex items-center justify-between">
+                                <span id="verbTenseTag" class="px-3 py-1 bg-cyanNeon/10 text-cyanNeon rounded-full text-xs font-bold flex items-center space-x-1">
+                                    <i class="fa-solid fa-tag mr-1"></i>
+                                    <span>Nivel / Entorno</span>
+                                </span>
+                                <button onclick="playContextPhraseToggle(this)" class="w-10 h-10 rounded-full bg-cyanNeon text-slate-950 flex items-center justify-center hover:bg-cyan-400 transition shadow-sm">
+                                    <i class="fa-solid fa-volume-high"></i>
+                                </button>
+                            </div>
+                            <h4 id="contextEnglish" class="text-2xl font-extrabold text-slate-800 dark:text-slate-100">Cargando...</h4>
+                            <p id="contextSpanish" class="text-base text-slate-500 dark:text-slate-400 font-medium">Cargando traducción...</p>
+                        </div>
+
+                        <!-- Botones de Autoevaluación SRS -->
+                        <div class="mt-6 space-y-3">
+                            <p class="text-xs font-bold uppercase text-slate-400 text-center">¿Qué tan bien recuerdas esta frase? (Repetición Espaciada SRS)</p>
+                            <div class="grid grid-cols-3 gap-3">
+                                <button onclick="rateSrsCard('hard')" class="py-3 px-4 bg-red-500/10 border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2">
+                                    <i class="fa-solid fa-face-frown"></i>
+                                    <span>Difícil (Mañana)</span>
+                                </button>
+                                <button onclick="rateSrsCard('good')" class="py-3 px-4 bg-yellow-500/10 border border-yellow-500/30 text-yellow-500 hover:bg-yellow-500 hover:text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2">
+                                    <i class="fa-solid fa-face-smile"></i>
+                                    <span>Bien (3 Días)</span>
+                                </button>
+                                <button onclick="rateSrsCard('easy')" class="py-3 px-4 bg-greenNeon/10 border border-greenNeon/30 text-greenNeon hover:bg-greenNeon hover:text-slate-950 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2">
+                                    <i class="fa-solid fa-face-laugh-beam"></i>
+                                    <span>Fácil (7 Días)</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 text-right">
+                            <button onclick="nextContextPhrase()" class="px-5 py-3 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold rounded-xl hover:bg-slate-300 transition inline-flex items-center space-x-2 text-xs">
+                                <span>Saltar Frase</span>
+                                <i class="fa-solid fa-arrow-right-long"></i>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 🌐 TRADUCTOR -->
+                <section id="sec-traductor" class="section-block space-y-6 hidden">
+                    <div class="bg-white dark:bg-darkCard rounded-3xl p-6 md:p-8 shadow-xl border border-slate-200 dark:border-slate-800 space-y-6">
+                        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-100 dark:bg-slate-900/80 p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
+                            <div class="flex items-center gap-4">
+                                <div id="lumi-traductor" class="w-20 h-20 shrink-0"></div>
+                                <div>
+                                    <h3 class="text-2xl font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                                        <i class="fa-solid fa-language text-cyanNeon"></i>
+                                        <span>Traductor Inteligente con Lumi</span>
+                                    </h3>
+                                    <p class="text-cyanNeon font-semibold text-sm mt-1">"¡Traducción fluida en ambas direcciones! ✨"</p>
+                                </div>
+                            </div>
+                            <!-- Selector de Dirección -->
+                            <div class="flex items-center space-x-2 bg-white dark:bg-slate-800 p-2 rounded-xl border border-slate-200 dark:border-slate-700">
+                                <label class="text-xs font-bold text-slate-400 uppercase">Modo:</label>
+                                <select id="translationMode" class="bg-transparent text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none">
+                                    <option value="auto">Detectar Automático</option>
+                                    <option value="es-en">Español ➔ Inglés</option>
+                                    <option value="en-es">Inglés ➔ Español</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <textarea id="translateInput" rows="4" class="w-full p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-cyanNeon" placeholder="Escribe aquí cualquier texto en español o inglés para traducir..."></textarea>
+                        </div>
+                        <div class="flex justify-end gap-2">
+                            <button onclick="performTranslation()" class="px-6 py-3.5 bg-gradient-to-r from-axolotlPurple to-cyanNeon text-white dark:text-slate-950 font-bold rounded-xl shadow-lg transition flex items-center space-x-2">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                <span>Traducir con Lumi</span>
+                            </button>
+                        </div>
+                        <div id="translationOutputArea" class="hidden space-y-3 pt-4 border-t border-slate-200 dark:border-slate-800">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold uppercase text-slate-400">Resultado:</span>
+                                <button onclick="speakTranslation()" class="text-cyanNeon hover:underline text-xs font-bold"><i class="fa-solid fa-volume-high"></i> Escuchar</button>
+                            </div>
+                            <div id="translationResultText" class="p-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-800 dark:text-slate-100 text-lg font-medium"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 📊 PROGRESO -->
+                <section id="sec-progreso" class="section-block space-y-6 hidden">
+                    <div class="bg-white dark:bg-darkCard rounded-3xl p-6 md:p-8 shadow-xl border border-slate-200 dark:border-slate-800">
+                        <h3 class="text-2xl font-extrabold text-slate-800 dark:text-slate-100 mb-6">Tu Avance Personal y Banco Masivo</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center">
+                                <p class="text-xs font-bold text-slate-400 uppercase">Frases Prácticadas</p>
+                                <p id="statPhrases" class="text-3xl font-extrabold text-cyanNeon mt-1">0</p>
+                            </div>
+                            <div class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center">
+                                <p class="text-xs font-bold text-slate-400 uppercase">Racha Actual</p>
+                                <p id="statStreak" class="text-3xl font-extrabold text-orange-400 mt-1">0 días</p>
+                            </div>
+                            <div class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center">
+                                <p class="text-xs font-bold text-slate-400 uppercase">Tarjetas SRS Activas</p>
+                                <p id="statSrsCount" class="text-3xl font-extrabold text-greenNeon mt-1">0</p>
+                            </div>
+                            <div class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center">
+                                <p class="text-xs font-bold text-slate-400 uppercase">Historias Escuchadas</p>
+                                <p id="statStoriesCount" class="text-3xl font-extrabold text-axolotlPink mt-1">0</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ⚙️ CONFIGURACIÓN -->
+                <section id="sec-configuracion" class="section-block space-y-6 hidden">
+                    <div class="bg-white dark:bg-darkCard rounded-3xl p-6 md:p-8 shadow-xl border border-slate-200 dark:border-slate-800 space-y-6">
+                        <h3 class="text-2xl font-extrabold text-slate-800 dark:text-slate-100 mb-4">Ajustes de Preferencias</h3>
+
+                        <div class="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-800">
+                            <div>
+                                <h4 class="font-bold text-slate-800 dark:text-slate-200 text-sm">Modo Nocturno</h4>
+                                <p class="text-xs text-slate-500">Alterna la interfaz entre tema claro y oscuro</p>
+                            </div>
+                            <button onclick="toggleDarkMode()" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-900 text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-800 transition border border-slate-200 dark:border-slate-800">Cambiar Tema</button>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-800">
+                            <div>
+                                <h4 class="font-bold text-slate-800 dark:text-slate-200 text-sm">Sincronizar Banco de Datos Inicial</h4>
+                                <p class="text-xs text-slate-500">Sube todas las historias y frases predeterminadas a tu proyecto en Firestore</p>
+                            </div>
+                            <button onclick="uploadAllDataToFirebase()" class="px-4 py-2 rounded-xl bg-greenNeon text-slate-950 text-xs font-bold hover:opacity-90 transition shadow-md">Subir Banco Inicial</button>
+                        </div>
+
+                        <!-- BOTONES DE VACIADO SELECCIONADO DE BASE DE DATOS -->
+                        <div class="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
+                            <h4 class="font-bold text-slate-800 dark:text-slate-200 text-sm">Gestión de Limpieza de Firestore</h4>
+                            
+                            <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                                <div>
+                                    <p class="font-bold text-slate-800 dark:text-slate-200 text-xs">Vaciar Colección de Frases</p>
+                                    <p class="text-[11px] text-slate-500">Borra las frases guardadas para cargar oraciones cortas</p>
+                                </div>
+                                <button onclick="clearPhrasesCollectionFromFirestore()" class="px-3.5 py-2 rounded-xl bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition shadow-sm">
+                                    <i class="fa-solid fa-trash mr-1"></i> Vaciar Frases
+                                </button>
+                            </div>
+
+                            <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                                <div>
+                                    <p class="font-bold text-slate-800 dark:text-slate-200 text-xs">Vaciar Banco de Shadowing</p>
+                                    <p class="text-[11px] text-slate-500">Borra las frases de voz para renovar ejercicios</p>
+                                </div>
+                                <button onclick="clearShadowingFromFirestore()" class="px-3.5 py-2 rounded-xl bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition shadow-sm">
+                                    <i class="fa-solid fa-trash mr-1"></i> Vaciar Shadowing
+                                </button>
+                            </div>
+
+                            <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                                <div>
+                                    <p class="font-bold text-slate-800 dark:text-slate-200 text-xs">Vaciar Escucha Activa (Podcasts)</p>
+                                    <p class="text-[11px] text-slate-500">Borra las historias largas para agregar nuevas</p>
+                                </div>
+                                <button onclick="clearPodcastsFromFirestore()" class="px-3.5 py-2 rounded-xl bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition shadow-sm">
+                                    <i class="fa-solid fa-trash mr-1"></i> Vaciar Escucha
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-800">
+                            <div>
+                                <h4 class="font-bold text-slate-800 dark:text-slate-200 text-sm">Reiniciar Memoria Anti-Repetición</h4>
+                                <p class="text-xs text-slate-500">Limpia el historial para volver a ver todas las frases desde cero</p>
+                            </div>
+                            <button onclick="resetSeenHistoryData()" class="px-4 py-2 rounded-xl bg-red-500 text-white text-xs font-bold hover:bg-red-600 transition shadow-md">Reiniciar Historial</button>
+                        </div>
+
+                        <!-- IMPORTACIÓN ARCHIVOS -->
+                        <div class="pt-6 border-t border-slate-200 dark:border-slate-800 space-y-4">
+                            <h4 class="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center space-x-2">
+                                <i class="fa-solid fa-file-pdf text-red-500"></i>
+                                <span>Subir Archivo PDF o Documento (.txt)</span>
+                            </h4>
+                            <p class="text-xs text-slate-500">Selecciona el módulo y guarda permanentemente en la base de datos de manera ultra rápida.</p>
+
+                            <form onsubmit="handlePdfOrTextUpload(event)" class="space-y-4 bg-slate-50 dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-bold uppercase text-slate-400 mb-1">Módulo de Destino:</label>
+                                        <select id="importTargetModule" class="w-full px-3 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold">
+                                            <option value="frases">Frases en Contexto</option>
+                                            <option value="shadowing">Shadowing (Práctica de Voz)</option>
+                                            <option value="podcasts">Escucha Activa (Historias)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold uppercase text-slate-400 mb-1">Nivel:</label>
+                                        <select id="importLevel" class="w-full px-3 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold">
+                                            <option value="A1-A2">A1-A2 (Principiante)</option>
+                                            <option value="B1-B2">B1-B2 (Intermedio)</option>
+                                            <option value="C1-C2">C1-C2 (Avanzado)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold uppercase text-slate-400 mb-1">Categoría:</label>
+                                        <select id="importCategory" class="w-full px-3 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold">
+                                            <option value="greetings">Saludos</option>
+                                            <option value="restaurant">Comida/Restaurante</option>
+                                            <option value="workplace">Oficina/Trabajo</option>
+                                            <option value="shopping">Compras</option>
+                                            <option value="travel">Viajes</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold uppercase text-slate-400 mb-1">Seleccionar Documento (.pdf o .txt):</label>
+                                    <input type="file" id="pdfFileInput" accept=".pdf,.txt" required class="w-full text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-cyanNeon file:text-slate-950 hover:file:opacity-90">
+                                </div>
+                                <button type="submit" id="btnUploadPdf" class="w-full py-3 bg-gradient-to-r from-axolotlPurple to-cyanNeon text-white dark:text-slate-950 font-bold rounded-xl shadow-md hover:opacity-90 transition">
+                                    <i class="fa-solid fa-cloud-arrow-up mr-1"></i>
+                                    <span>Procesar y Guardar Permanentemente</span>
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- FRASES MANUALES -->
+                        <div class="pt-6 border-t border-slate-200 dark:border-slate-800 space-y-4">
+                            <h4 class="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center space-x-2">
+                                <i class="fa-solid fa-plus-circle text-cyanNeon"></i>
+                                <span>Agregar Frase Individual Manualmente</span>
+                            </h4>
+                            <form onsubmit="saveCustomPhraseToFirestore(event)" class="space-y-4 bg-slate-50 dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
+                                <div>
+                                    <label class="block text-xs font-bold uppercase text-slate-400 mb-1">Frase en Inglés:</label>
+                                    <input type="text" id="newPhraseEn" required placeholder="Ej: Could you bring me the menu, please?" class="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold uppercase text-slate-400 mb-1">Traducción en Español:</label>
+                                    <input type="text" id="newPhraseEs" required placeholder="Ej: ¿Podría traerme el menú, por favor?" class="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm">
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs font-bold uppercase text-slate-400 mb-1">Nivel:</label>
+                                        <select id="newPhraseLevel" class="w-full px-3 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold">
+                                            <option value="A1-A2">A1-A2 (Principiante)</option>
+                                            <option value="B1-B2">B1-B2 (Intermedio)</option>
+                                            <option value="C1-C2">C1-C2 (Avanzado)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold uppercase text-slate-400 mb-1">Categoría:</label>
+                                        <select id="newPhraseCategory" class="w-full px-3 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold">
+                                            <option value="greetings">Saludos</option>
+                                            <option value="restaurant">Comida/Restaurante</option>
+                                            <option value="workplace">Oficina/Trabajo</option>
+                                            <option value="shopping">Compras</option>
+                                            <option value="travel">Viajes</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <button type="submit" class="w-full py-3 bg-gradient-to-r from-axolotlPurple to-cyanNeon text-white dark:text-slate-950 font-bold rounded-xl shadow-md hover:opacity-90 transition">
+                                    💾 Guardar Frase Permanentemente
+                                </button>
+                            </form>
+                        </div>
+
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+                // CONFIGURACIÓN REAL DE FIREBASE (fluencyapp-624e9)
+                const firebaseConfig = {
+                    apiKey: "AIzaSyAVw8jDplTgk-YKA_PV-pHV0cvaZzWSn-w",
+                    authDomain: "fluencyapp-624e9.firebaseapp.com",
+                    databaseURL: "https://fluencyapp-624e9-default-rtdb.firebaseio.com",
+                    projectId: "fluencyapp-624e9",
+                    storageBucket: "fluencyapp-624e9.firebasestorage.app",
+                    messagingSenderId: "401291332780",
+                    appId: "1:401291332780:web:ff75639aa159e7c2ce2309",
+                    measurementId: "G-PKQEJV2WZR"
+                };
+
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                }
+                const db = firebase.firestore();
+
+                // Datos por defecto
+                let PODCAST_STORIES = {
+                    "A1-A2": [
+                        { "id": "s1", "title": "1. THE BRIGHTEST STAR", "en": "Did you know that Sirius is the brightest star in our night sky? It shines twice as bright as any other star because it is relatively close to Earth.", "es": "¿Sabías que Sirio es la estrella más brillante de nuestro cielo nocturno? Brilla el doble que cualquier otra estrella porque está relativamente cerca de la Tierra." },
+                        { "id": "s2", "title": "2. THE FIRST BICYCLE", "en": "The first bicycle was invented in Germany in 1817 by Baron Karl von Drais. It had no pedals, so riders had to push themselves forward with their feet.", "es": "La primera bicicleta fue inventada en Alemania en 1817 por el barón Karl von Drais. No tenía pedales, por lo que los ciclistas se impulsaban con los pies." }
+                    ],
+                    "B1-B2": [],
+                    "C1-C2": []
+                };
+
+                let SHADOWING_BANK = {
+                    "A1-A2": [
+                        { "id": "sh1", "en": "Good morning, how are you today?", "es": "Buenos días, ¿cómo estás hoy?" },
+                        { "id": "sh2", "en": "It's a pleasure to meet you.", "es": "Es un placer conocerte." }
+                    ],
+                    "B1-B2": [],
+                    "C1-C2": []
+                };
+
+                let FRASES = {
+                    "A1-A2": [
+                        { "id": "f1", "level": "A1-A2", "category": "greetings", "en": "Morning, Sarah! How's it going?", "es": "¡Buenos días, Sarah! ¿Cómo va todo?", "context": "Casual Morning Greeting" }
+                    ],
+                    "B1-B2": [],
+                    "C1-C2": []
+                };
+
+                let SRS_CARDS = {};
+                let onlyShortPhrases = false;
+
+                function updateLocalCache() {
+                    localStorage.setItem('fluency_podcasts_cache', JSON.stringify(PODCAST_STORIES));
+                    localStorage.setItem('fluency_shadowing_cache', JSON.stringify(SHADOWING_BANK));
+                    localStorage.setItem('fluency_frases_cache', JSON.stringify(FRASES));
+                    localStorage.setItem('fluency_srs_cache', JSON.stringify(SRS_CARDS));
+                }
+
+                async function loadDataFromFirestore() {
+                    try {
+                        const podcastSnapshot = await db.collection("podcasts").get();
+                        if (!podcastSnapshot.empty) {
+                            PODCAST_STORIES = { "A1-A2": [], "B1-B2": [], "C1-C2": [] };
+                            podcastSnapshot.forEach(doc => {
+                                const data = doc.data();
+                                const lvl = data.level || "A1-A2";
+                                if (!PODCAST_STORIES[lvl]) PODCAST_STORIES[lvl] = [];
+                                PODCAST_STORIES[lvl].push(data);
+                            });
+                        }
+
+                        const shadowingSnapshot = await db.collection("shadowing").get();
+                        if (!shadowingSnapshot.empty) {
+                            SHADOWING_BANK = { "A1-A2": [], "B1-B2": [], "C1-C2": [] };
+                            shadowingSnapshot.forEach(doc => {
+                                const data = doc.data();
+                                const lvl = data.level || "A1-A2";
+                                if (!SHADOWING_BANK[lvl]) SHADOWING_BANK[lvl] = [];
+                                SHADOWING_BANK[lvl].push(data);
+                            });
+                        }
+
+                        const frasesSnapshot = await db.collection("frases").get();
+                        if (!frasesSnapshot.empty) {
+                            FRASES = { "A1-A2": [], "B1-B2": [], "C1-C2": [] };
+                            frasesSnapshot.forEach(doc => {
+                                const data = doc.data();
+                                const lvl = data.level || "A1-A2";
+                                if (!FRASES[lvl]) FRASES[lvl] = [];
+                                FRASES[lvl].push(data);
+                            });
+                        }
+
+                        if (currentUser) {
+                            const srsSnapshot = await db.collection("srs_cards").where("username", "==", currentUser.username).get();
+                            if (!srsSnapshot.empty) {
+                                SRS_CARDS = {};
+                                srsSnapshot.forEach(doc => {
+                                    SRS_CARDS[doc.id] = doc.data();
+                                });
+                            }
+                        }
+
+                        updateLocalCache();
+                    } catch (error) {
+                        console.error("Modo Offline / Error Firestore:", error);
+                        const cachedPodcasts = localStorage.getItem('fluency_podcasts_cache');
+                        const cachedShadowing = localStorage.getItem('fluency_shadowing_cache');
+                        const cachedFrases = localStorage.getItem('fluency_frases_cache');
+                        const cachedSrs = localStorage.getItem('fluency_srs_cache');
+                        if (cachedPodcasts) PODCAST_STORIES = JSON.parse(cachedPodcasts);
+                        if (cachedShadowing) SHADOWING_BANK = JSON.parse(cachedShadowing);
+                        if (cachedFrases) FRASES = JSON.parse(cachedFrases);
+                        if (cachedSrs) SRS_CARDS = JSON.parse(cachedSrs);
+                    }
+                }
+
+                async function fetchAutoTranslation(text) {
+                    if (!text) return "";
+                    try {
+                        const response = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=es&dt=t&q=${encodeURIComponent(text)}`);
+                        const data = await response.json();
+                        if (data && data[0]) {
+                            return data[0].map(item => item[0]).join('');
+                        }
+                    } catch (e) {
+                        console.error("Error traduciendo automáticamente:", e);
+                    }
+                    return "";
+                }
+
+                async function handlePdfOrTextUpload(e) {
+                    e.preventDefault();
+                    const fileInput = document.getElementById('pdfFileInput');
+                    const targetModule = document.getElementById('importTargetModule').value;
+                    const level = document.getElementById('importLevel').value;
+                    const category = document.getElementById('importCategory').value;
+                    const btn = document.getElementById('btnUploadPdf');
+
+                    if (!fileInput.files || fileInput.files.length === 0) return;
+                    const file = fileInput.files[0];
+
+                    btn.disabled = true;
+                    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Procesando documento a alta velocidad...`;
+
+                    try {
+                        let extractedText = "";
+
+                        if (file.name.endsWith('.pdf')) {
+                            const arrayBuffer = await file.arrayBuffer();
+                            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+                            for (let i = 1; i <= pdf.numPages; i++) {
+                                const page = await pdf.getPage(i);
+                                const textContent = await page.getTextContent();
+                                extractedText += textContent.items.map(item => item.str).join(" ") + " ";
+                            }
+                        } else {
+                            extractedText = await file.text();
+                        }
+
+                        extractedText = extractedText.replace(/\s+/g, ' ').trim();
+
+                        let batch = db.batch();
+                        let batchCount = 0;
+                        let totalItems = 0;
+                        const batchLimit = 450;
+
+                        if (targetModule === 'podcasts') {
+                            const sentences = extractedText.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 10);
+                            let currentChunk = "";
+                            let chunkIndex = 1;
+
+                            for (let sentence of sentences) {
+                                if ((currentChunk + " " + sentence).length > 280) {
+                                    if (currentChunk.trim()) {
+                                        const storyId = "s_pdf_" + Date.now() + "_" + totalItems;
+                                        const titleText = `${chunkIndex}. Story`;
+                                        const esTrans = await fetchAutoTranslation(currentChunk.trim());
+                                        const itemData = { id: storyId, title: titleText, en: currentChunk.trim(), es: esTrans || "(Traducción pendiente)", level: level };
+
+                                        if (!PODCAST_STORIES[level]) PODCAST_STORIES[level] = [];
+                                        PODCAST_STORIES[level].push(itemData);
+
+                                        batch.set(db.collection("podcasts").doc(storyId), itemData);
+                                        batchCount++;
+                                        if (batchCount >= batchLimit) {
+                                            await batch.commit();
+                                            batch = db.batch();
+                                            batchCount = 0;
+                                        }
+
+                                        totalItems++;
+                                        chunkIndex++;
+                                    }
+                                    currentChunk = sentence;
+                                } else {
+                                    currentChunk += (currentChunk ? " " : "") + sentence;
+                                }
+                            }
+
+                            if (currentChunk.trim()) {
+                                const storyId = "s_pdf_" + Date.now() + "_" + totalItems;
+                                const esTrans = await fetchAutoTranslation(currentChunk.trim());
+                                const itemData = { id: storyId, title: `${chunkIndex}. Story`, en: currentChunk.trim(), es: esTrans || "(Traducción pendiente)", level: level };
+                                if (!PODCAST_STORIES[level]) PODCAST_STORIES[level] = [];
+                                PODCAST_STORIES[level].push(itemData);
+                                batch.set(db.collection("podcasts").doc(storyId), itemData);
+                                batchCount++;
+                                totalItems++;
+                            }
+
+                        } else if (targetModule === 'shadowing') {
+                            const sentences = extractedText.split(/(?<=[.!?])\s+/).map(s => s.trim()).filter(s => s.length > 5 && s.length < 120);
+
+                            for (let sentence of sentences) {
+                                const shId = "sh_pdf_" + Date.now() + "_" + totalItems;
+                                const esTrans = await fetchAutoTranslation(sentence);
+                                const itemData = { id: shId, en: sentence, es: esTrans || "(Traducción pendiente)", level: level };
+
+                                if (!SHADOWING_BANK[level]) SHADOWING_BANK[level] = [];
+                                SHADOWING_BANK[level].push(itemData);
+
+                                batch.set(db.collection("shadowing").doc(shId), itemData);
+                                batchCount++;
+                                if (batchCount >= batchLimit) {
+                                    await batch.commit();
+                                    batch = db.batch();
+                                    batchCount = 0;
+                                }
+                                totalItems++;
+                            }
+                        } else {
+                            const sentences = extractedText.split(/(?<=[.!?])\s+/).map(s => s.trim()).filter(s => s.length > 8 && s.length < 160);
+
+                            for (let sentence of sentences) {
+                                const fId = "f_pdf_" + Date.now() + "_" + totalItems;
+                                const esTrans = await fetchAutoTranslation(sentence);
+                                const itemData = { id: fId, en: sentence, es: esTrans || "(Traducción pendiente)", level: level, category: category, context: `General` };
+
+                                if (!FRASES[level]) FRASES[level] = [];
+                                FRASES[level].push(itemData);
+
+                                batch.set(db.collection("frases").doc(fId), itemData);
+                                batchCount++;
+                                if (batchCount >= batchLimit) {
+                                    await batch.commit();
+                                    batch = db.batch();
+                                    batchCount = 0;
+                                }
+                                totalItems++;
+                            }
+                        }
+
+                        if (batchCount > 0) {
+                            await batch.commit();
+                        }
+
+                        updateLocalCache();
+                        alert(`¡Documento procesado correctamente! Se guardaron ${totalItems} elementos en Firestore.`);
+                        fileInput.value = '';
+                    } catch (error) {
+                        console.error("Error al procesar el archivo:", error);
+                        alert("Ocurrió un problema guardando en Firestore: " + error.message);
+                    } finally {
+                        btn.disabled = false;
+                        btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up mr-1"></i> Procesar y Guardar Permanentemente`;
+                    }
+                }
+
+                async function saveCustomPhraseToFirestore(e) {
+                    e.preventDefault();
+                    const en = document.getElementById('newPhraseEn').value.trim();
+                    const es = document.getElementById('newPhraseEs').value.trim();
+                    const level = document.getElementById('newPhraseLevel').value;
+                    const category = document.getElementById('newPhraseCategory').value;
+
+                    const customId = "f_custom_" + Date.now();
+                    const item = { id: customId, en: en, es: es, level: level, category: category, context: "Frase Personalizada" };
+
+                    if (!FRASES[level]) FRASES[level] = [];
+                    FRASES[level].push(item);
+                    updateLocalCache();
+
+                    try {
+                        await db.collection("frases").doc(customId).set(item);
+                        alert("¡Frase guardada permanentemente en Firestore!");
+                    } catch (error) {
+                        console.error("Error Firestore:", error);
+                        alert("Error al guardar en Firestore: " + error.message);
+                    }
+                    document.getElementById('newPhraseEn').value = '';
+                    document.getElementById('newPhraseEs').value = '';
+                }
+
+                // FUNCIONES DE VACIADO SEGURAS EN FIRESTORE
+                async function clearPhrasesCollectionFromFirestore() {
+                    if (!confirm("¿Estás seguro de que deseas vaciar toda la colección de frases en Firestore?")) return;
+                    try {
+                        const snapshot = await db.collection("frases").get();
+                        if (snapshot.empty) { alert("La colección de frases ya está vacía."); return; }
+                        let batch = db.batch();
+                        let count = 0;
+                        snapshot.forEach(doc => { batch.delete(doc.ref); count++; });
+                        await batch.commit();
+                        FRASES = { "A1-A2": [], "B1-B2": [], "C1-C2": [] };
+                        updateLocalCache();
+                        alert(`¡Colección de frases eliminada correctamente (${count} elementos)! Ya puedes cargar tus nuevas frases cortas.`);
+                        displayContextPhrase();
+                    } catch (error) {
+                        console.error("Error al vaciar frases:", error);
+                        alert("Ocurrió un error al vaciar frases: " + error.message);
+                    }
+                }
+
+                async function clearShadowingFromFirestore() {
+                    if (!confirm("¿Estás seguro de que deseas vaciar toda la colección de Shadowing en Firestore?")) return;
+                    try {
+                        const snapshot = await db.collection("shadowing").get();
+                        if (snapshot.empty) { alert("La colección de Shadowing ya está vacía."); return; }
+                        let batch = db.batch();
+                        let count = 0;
+                        snapshot.forEach(doc => { batch.delete(doc.ref); count++; });
+                        await batch.commit();
+                        SHADOWING_BANK = { "A1-A2": [], "B1-B2": [], "C1-C2": [] };
+                        updateLocalCache();
+                        alert(`¡Colección de Shadowing eliminada correctamente (${count} elementos)!`);
+                        nextShadowingPhrase();
+                    } catch (error) {
+                        console.error("Error al vaciar Shadowing:", error);
+                        alert("Ocurrió un error al vaciar Shadowing: " + error.message);
+                    }
+                }
+
+                async function clearPodcastsFromFirestore() {
+                    if (!confirm("¿Estás seguro de que deseas vaciar toda la colección de Historias / Escucha Activa en Firestore?")) return;
+                    try {
+                        const snapshot = await db.collection("podcasts").get();
+                        if (snapshot.empty) { alert("La colección de podcasts ya está vacía."); return; }
+                        let batch = db.batch();
+                        let count = 0;
+                        snapshot.forEach(doc => { batch.delete(doc.ref); count++; });
+                        await batch.commit();
+                        PODCAST_STORIES = { "A1-A2": [], "B1-B2": [], "C1-C2": [] };
+                        updateLocalCache();
+                        alert(`¡Colección de podcasts eliminada correctamente (${count} elementos)!`);
+                        displayActiveStory();
+                    } catch (error) {
+                        console.error("Error al vaciar Podcasts:", error);
+                        alert("Ocurrió un error al vaciar Historias: " + error.message);
+                    }
+                }
+
+                async function uploadAllDataToFirebase() {
+                    try {
+                        let batch = db.batch();
+                        let opCount = 0;
+
+                        for (const level in PODCAST_STORIES) {
+                            for (const story of PODCAST_STORIES[level]) {
+                                batch.set(db.collection("podcasts").doc(story.id), { ...story, level });
+                                opCount++;
+                                if (opCount >= 400) { await batch.commit(); batch = db.batch(); opCount = 0; }
+                            }
+                        }
+                        for (const level in SHADOWING_BANK) {
+                            for (const item of SHADOWING_BANK[level]) {
+                                batch.set(db.collection("shadowing").doc(item.id), { ...item, level });
+                                opCount++;
+                                if (opCount >= 400) { await batch.commit(); batch = db.batch(); opCount = 0; }
+                            }
+                        }
+                        for (const level in FRASES) {
+                            for (const item of FRASES[level]) {
+                                batch.set(db.collection("frases").doc(item.id), { ...item, level: item.level || level });
+                                opCount++;
+                                if (opCount >= 400) { await batch.commit(); batch = db.batch(); opCount = 0; }
+                            }
+                        }
+                        if (opCount > 0) { await batch.commit(); }
+                        alert("¡Sincronización completa finalizada con éxito en Firestore!");
+                    } catch (error) {
+                        console.error("Error sincronización:", error);
+                        alert("Error al sincronizar datos: " + error.message);
+                    }
+                }
+
+                let seenHistory = {
+                    shadowing: new Set(JSON.parse(localStorage.getItem('fluency_seen_shadowing') || '[]')),
+                    context: new Set(JSON.parse(localStorage.getItem('fluency_seen_context') || '[]')),
+                    stories: new Set(JSON.parse(localStorage.getItem('fluency_seen_stories') || '[]'))
+                };
+
+                function saveSeenHistory() {
+                    localStorage.setItem('fluency_seen_shadowing', JSON.stringify(Array.from(seenHistory.shadowing)));
+                    localStorage.setItem('fluency_seen_context', JSON.stringify(Array.from(seenHistory.context)));
+                    localStorage.setItem('fluency_seen_stories', JSON.stringify(Array.from(seenHistory.stories)));
+                }
+
+                function resetSeenHistoryData() {
+                    seenHistory.shadowing.clear();
+                    seenHistory.context.clear();
+                    seenHistory.stories.clear();
+                    saveSeenHistory();
+                    alert("¡Memoria anti-repetición reiniciada con éxito!");
+                }
+
+                const synth = window.speechSynthesis;
+                let activeVoices = [];
+                let currentUser = null;
+                let currentActiveStoryIndex = 0;
+                let currentShadowingPhrase = null;
+                let currentContextPhrase = null;
+                let currentContextCategory = "greetings";
+                let currentUtterance = null;
+                let chatThread = [];
+                let isRecordingShadowing = false;
+                let currentTranslationText = "";
+
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+                function getLumiSVG() {
+                    return `
+                        <svg viewBox="0 0 100 100" class="w-full h-full lumi-svg-container">
+                            <ellipse cx="50" cy="50" rx="32" ry="26" fill="#ff9ebb"/>
+                            <ellipse cx="50" cy="52" rx="28" ry="22" fill="#ffb8cc"/>
+                            <circle cx="38" cy="42" r="5" fill="#0f172a"/><circle cx="39" cy="40" r="2" fill="#ffffff"/>
+                            <circle cx="62" cy="42" r="5" fill="#0f172a"/><circle cx="63" cy="40" r="2" fill="#ffffff"/>
+                            <path d="M 44 52 Q 50 58 56 52" stroke="#0f172a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+                        </svg>
+                    `;
+                }
+
+                function renderAllLumis() {
+                    ['lumi-auth', 'lumi-logo', 'lumi-inicio', 'lumi-escucha', 'lumi-conversacion', 'lumi-shadowing', 'lumi-contexto', 'lumi-traductor', 'lumi-progreso'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.innerHTML = getLumiSVG();
+                    });
+                }
+
+                function loadVoices() {
+                    if (!synth) return;
+                    activeVoices = synth.getVoices();
+                    const select = document.getElementById('activeVoice');
+                    if (!select) return;
+                    select.innerHTML = '';
+                    activeVoices.filter(v => v.lang && v.lang.startsWith('en')).forEach((voice, index) => {
+                        const option = document.createElement('option');
+                        option.value = voice.name;
+                        option.textContent = `${voice.name} (${voice.lang})`;
+                        if (index === 0) option.selected = true;
+                        select.appendChild(option);
+                    });
+                }
+
+                window.onload = async function () {
+                    renderAllLumis();
+                    loadVoices();
+                    if (synth && synth.onvoiceschanged !== undefined) synth.onvoiceschanged = loadVoices;
+                    await loadDataFromFirestore();
+                    checkExistingSession();
+                };
+
+                function checkExistingSession() {
+                    const savedUser = localStorage.getItem('fluency_current_user');
+                    if (savedUser) {
+                        const userData = localStorage.getItem(`fluency_user_${savedUser}`);
+                        if (userData) {
+                            currentUser = JSON.parse(userData);
+                            if (!currentUser.stats) currentUser.stats = { phrasesPracticed: 0, streakDays: 1, lastPracticeDate: new Date().toDateString() };
+                            checkAndUpdateStreak();
+                            initDashboard();
+                            return;
+                        }
+                    }
+                    document.getElementById('authScreen').classList.remove('hidden');
+                }
+
+                function checkAndUpdateStreak() {
+                    if (!currentUser) return;
+                    const today = new Date().toDateString();
+                    const lastDate = currentUser.stats.lastPracticeDate;
+
+                    if (!lastDate) {
+                        currentUser.stats.streakDays = 1;
+                        currentUser.stats.lastPracticeDate = today;
+                    } else if (lastDate !== today) {
+                        const yesterday = new Date();
+                        yesterday.setDate(yesterday.getDate() - 1);
+                        if (lastDate === yesterday.toDateString()) {
+                            currentUser.stats.streakDays = (currentUser.stats.streakDays || 0) + 1;
+                        } else {
+                            currentUser.stats.streakDays = 1;
+                        }
+                        currentUser.stats.lastPracticeDate = today;
+                    }
+                    localStorage.setItem(`fluency_user_${currentUser.username}`, JSON.stringify(currentUser));
+                }
+
+                function switchAuthTab(tab) {
+                    if (tab === 'login') {
+                        document.getElementById('loginForm').classList.remove('hidden');
+                        document.getElementById('registerForm').classList.add('hidden');
+                    } else {
+                        document.getElementById('loginForm').classList.add('hidden');
+                        document.getElementById('registerForm').classList.remove('hidden');
+                    }
+                }
+
+                function handleRegister(e) {
+                    e.preventDefault();
+                    const name = document.getElementById('regName').value.trim();
+                    const username = document.getElementById('regUsername').value.trim().toLowerCase();
+                    const password = document.getElementById('regPassword').value;
+
+                    currentUser = { name, username, password, level: 'A1-A2', darkMode: false, stats: { phrasesPracticed: 0, streakDays: 1, lastPracticeDate: new Date().toDateString() } };
+                    localStorage.setItem(`fluency_user_${username}`, JSON.stringify(currentUser));
+                    localStorage.setItem('fluency_current_user', username);
+                    initDashboard();
+                }
+
+                function handleLogin(e) {
+                    e.preventDefault();
+                    const username = document.getElementById('loginUsername').value.trim().toLowerCase();
+                    const password = document.getElementById('loginPassword').value;
+                    const userData = localStorage.getItem(`fluency_user_${username}`);
+                    if (!userData) { alert('Usuario no encontrado. Regístrate.'); return; }
+                    const user = JSON.parse(userData);
+                    if (user.password !== password) { alert('Contraseña incorrecta.'); return; }
+                    currentUser = user;
+                    localStorage.setItem('fluency_current_user', username);
+                    checkAndUpdateStreak();
+                    initDashboard();
+                }
+
+                function initDashboard() {
+                    document.getElementById('authScreen').classList.add('hidden');
+                    document.getElementById('welcomeGreeting').innerText = `¡Hola, ${currentUser.name}! ✨`;
+                    document.getElementById('navUserName').innerText = currentUser.name;
+                    document.getElementById('navUserLevel').innerText = `Nivel: ${currentUser.level}`;
+                    document.getElementById('navStreakCount').innerText = `${currentUser.stats.streakDays || 1}d`;
+                    setUserLevel(currentUser.level, false);
+                    showSection('inicio');
+                    renderContextTabs();
+                }
+
+                function toggleDarkMode() {
+                    const isDark = document.documentElement.classList.toggle('dark');
+                    document.getElementById('themeIcon').className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+                    if (currentUser) { currentUser.darkMode = isDark; localStorage.setItem(`fluency_user_${currentUser.username}`, JSON.stringify(currentUser)); }
+                }
+
+                function showSection(sectionId) {
+                    synth.cancel();
+                    document.querySelectorAll('.section-block').forEach(sec => sec.classList.add('hidden'));
+                    const targetSec = document.getElementById(`sec-${sectionId}`);
+                    if (targetSec) targetSec.classList.remove('hidden');
+
+                    if (sectionId === 'escucha') displayActiveStory();
+                    else if (sectionId === 'shadowing' && !currentShadowingPhrase) nextShadowingPhrase();
+                    else if (sectionId === 'contexto') renderContextTabs();
+                    else if (sectionId === 'conversacion') resetChat();
+                    else if (sectionId === 'progreso') updateStats();
+                }
+
+                function setUserLevel(level, notify = true) {
+                    if (!currentUser) return;
+                    currentUser.level = level;
+                    localStorage.setItem(`fluency_user_${currentUser.username}`, JSON.stringify(currentUser));
+                    document.getElementById('navUserLevel').innerText = `Nivel: ${level}`;
+                    currentShadowingPhrase = null;
+                    currentActiveStoryIndex = 0;
+                    if (notify) showSection('escucha');
+                }
+
+                // --- SISTEMA DE SÍNTESIS DE VOZ ---
+                async function speakWithSpanishTranslation(textEn, existingEsText) {
+                    if (!synth || !textEn) return;
+                    synth.cancel();
+
+                    let textEs = existingEsText;
+                    if (!textEs || textEs === "(Traducción pendiente)") {
+                        textEs = await fetchAutoTranslation(textEn);
+                    }
+
+                    const speed = parseFloat(document.getElementById('activeSpeed')?.value || '1.0');
+
+                    const uttEn = new SpeechSynthesisUtterance(textEn);
+                    uttEn.lang = 'en-US';
+                    uttEn.rate = speed;
+
+                    uttEn.onend = function() {
+                        if (textEs && textEs.trim().length > 0) {
+                            const uttEs = new SpeechSynthesisUtterance(textEs);
+                            uttEs.lang = 'es-ES';
+                            uttEs.rate = speed;
+                            synth.speak(uttEs);
+                        }
+                    };
+
+                    synth.speak(uttEn);
+                }
+
+                function toggleSpeech(text) {
+                    if (!synth || !text) return;
+                    synth.cancel();
+                    currentUtterance = new SpeechSynthesisUtterance(text);
+
+                    const isSpanish = /[áéíóúñ¿¡]/i.test(text);
+                    currentUtterance.lang = isSpanish ? 'es-ES' : 'en-US';
+
+                    const speed = parseFloat(document.getElementById('activeSpeed')?.value || '1.0');
+                    currentUtterance.rate = speed;
+                    synth.speak(currentUtterance);
+                }
+
+                function nextActiveStory() {
+                    const list = PODCAST_STORIES[currentUser.level] || PODCAST_STORIES["A1-A2"] || [];
+                    if (list.length === 0) {
+                        alert("No hay historias disponibles para este nivel aún. Sube un documento en Configuración.");
+                        return;
+                    }
+                    let available = list.filter(s => s && s.id && !seenHistory.stories.has(s.id));
+                    if (available.length === 0) {
+                        seenHistory.stories.clear();
+                        saveSeenHistory();
+                        available = list;
+                    }
+                    const selected = available[Math.floor(Math.random() * available.length)];
+                    if (selected && selected.id) {
+                        seenHistory.stories.add(selected.id);
+                        saveSeenHistory();
+                        currentActiveStoryIndex = list.findIndex(s => s.id === selected.id);
+                    }
+                    displayActiveStory();
+                }
+
+                async function displayActiveStory() {
+                    const list = PODCAST_STORIES[currentUser.level] || PODCAST_STORIES["A1-A2"] || [];
+                    if (!list || list.length === 0) {
+                        document.getElementById('storyTitle').innerText = "Sin historias";
+                        document.getElementById('escuchaDisplay').innerText = "Sube un PDF o TXT en Configuración para comenzar.";
+                        document.getElementById('escuchaTranslation').innerText = "";
+                        return;
+                    }
+                    if (currentActiveStoryIndex >= list.length) currentActiveStoryIndex = 0;
+                    const story = list[currentActiveStoryIndex];
+                    if (!story) return;
+
+                    if (!story.es || story.es === "(Traducción pendiente)") {
+                        story.es = await fetchAutoTranslation(story.en);
+                    }
+
+                    document.getElementById('escuchaLevelBadge').innerText = `Nivel: ${currentUser.level} (Vistas: ${seenHistory.stories.size}/${list.length})`;
+                    document.getElementById('storyTitle').innerText = story.title || "Historia";
+                    document.getElementById('escuchaTranslation').innerText = story.es || "";
+                    document.getElementById('escuchaDisplay').innerText = story.en || "";
+                    currentUser.stats.phrasesPracticed++;
+                    localStorage.setItem(`fluency_user_${currentUser.username}`, JSON.stringify(currentUser));
+                }
+
+                function toggleActiveStorySpeech() {
+                    const list = PODCAST_STORIES[currentUser.level] || PODCAST_STORIES["A1-A2"];
+                    if (list && list[currentActiveStoryIndex]) {
+                        const story = list[currentActiveStoryIndex];
+                        speakWithSpanishTranslation(story.en, story.es);
+                    }
+                }
+                function pauseActiveStory() { synth.cancel(); }
+
+                // --- CONVERSACIÓN INTERACTIVA ---
+                function resetChat() {
+                    chatThread = [];
+                    const win = document.getElementById('chatWindow');
+                    if(!win) return;
+                    win.innerHTML = '';
+
+                    const greetingEn = "Hello! I am Lumi. We can discuss any topic you want. How are you doing today?";
+                    const greetingEs = "¡Hola! Soy Lumi. Podemos hablar de cualquier tema. ¿Cómo estás hoy?";
+
+                    addChatMessage('bot', `${greetingEn} <br><span class="text-xs opacity-75 italic">(${greetingEs})</span>`);
+                    chatThread.push({ role: 'bot', text: greetingEn });
+                }
+
+                function addChatMessage(sender, text, feedback = null) {
+                    const win = document.getElementById('chatWindow');
+                    if(!win) return;
+                    const div = document.createElement('div');
+                    div.className = sender === 'user' ? 'flex flex-col items-end mb-2' : 'flex flex-col items-start mb-2';
+
+                    let feedbackHtml = '';
+                    if (feedback) {
+                        feedbackHtml = `
+                            <div class="mt-1.5 p-2.5 rounded-xl bg-cyanNeon/10 border border-cyanNeon/30 text-xs text-slate-700 dark:text-slate-300 max-w-[85%] space-y-1">
+                                <p class="font-bold text-cyanNeon flex items-center gap-1">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i> Lumi Grammar & Style Feedback:
+                                </p>
+                                <p><strong>Sugerencia más natural:</strong> <span class="italic font-medium text-greenNeon dark:text-green-400">"${feedback.suggested}"</span></p>
+                                ${feedback.note ? `<p class="text-[11px] opacity-80">${feedback.note}</p>` : ''}
+                            </div>
+                        `;
+                    }
+
+                    div.innerHTML = `
+                        <div class="p-3.5 rounded-2xl max-w-[85%] text-sm shadow-sm ${sender === 'user' ? 'bg-cyanNeon text-slate-950 font-bold' : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100'}">${text}</div>
+                        ${feedbackHtml}
+                    `;
+                    win.appendChild(div);
+                    win.scrollTop = win.scrollHeight;
+                }
+
+                function analyzeUserGrammar(text) {
+                    const lower = text.toLowerCase().trim();
+                    let suggested = text;
+                    let note = "";
+
+                    if (lower.includes("i have") && lower.match(/\b\d+\b/) && (lower.includes("years") || lower.includes("age"))) {
+                        suggested = text.replace(/i have/i, "I am");
+                        note = "En inglés la edad se expresa con el verbo 'to be' (I am), no con 'have'.";
+                    } else if (lower.startsWith("i am agree")) {
+                        suggested = text.replace(/i am agree/i, "I agree");
+                        note = "'Agree' ya es un verbo, por lo que se dice 'I agree' en lugar de 'I am agree'.";
+                    } else if (lower.includes("people is")) {
+                        suggested = text.replace(/people is/i, "people are");
+                        note = "'People' es sustantivo plural en inglés, por lo que utiliza 'are'.";
+                    } else if (lower.includes("how it works")) {
+                        suggested = text.replace(/how it works/i, "how does it work");
+                        note = "En preguntas directas, usa el auxiliar 'does' antes del sujeto.";
+                    }
+
+                    if (suggested !== text) {
+                        return { suggested, note };
+                    }
+                    return null;
+                }
+
+                function handleSendMessage(e) {
+                    if (e) e.preventDefault();
+                    const input = document.getElementById('chatInput');
+                    const text = input.value.trim();
+                    if (!text) return;
+
+                    const feedback = analyzeUserGrammar(text);
+
+                    addChatMessage('user', text, feedback);
+                    chatThread.push({ role: 'user', text: text });
+                    input.value = '';
+
+                    currentUser.stats.phrasesPracticed++;
+                    localStorage.setItem(`fluency_user_${currentUser.username}`, JSON.stringify(currentUser));
+
+                    setTimeout(() => {
+                        generateFreeResponse(text);
+                    }, 500);
+                }
+
+                function generateFreeResponse(userMessage) {
+                    const lower = userMessage.toLowerCase();
+                    let replyEn = "";
+                    let replyEs = "";
+
+                    if (lower.includes("hello") || lower.includes("hi") || lower.includes("hola")) {
+                        replyEn = "Hello! It is great to chat with you. What are you up to today?";
+                        replyEs = "¡Hola! Es genial conversar contigo. ¿Qué estás haciendo hoy?";
+                    } else if (lower.includes("how are you") || lower.includes("como estas")) {
+                        replyEn = "I am doing great, thank you for asking! How are things with you?";
+                        replyEs = "¡Estoy genial, gracias por preguntar! ¿Cómo van las cosas contigo?";
+                    } else if (lower.includes("weather") || lower.includes("tiempo") || lower.includes("clima")) {
+                        replyEn = "Weather changes everything! Is it sunny or rainy where you are right now?";
+                        replyEs = "¡El clima lo cambia todo! ¿Está soleado o lluvioso donde estás ahora?";
+                    } else if (lower.includes("food") || lower.includes("eat") || lower.includes("comida") || lower.includes("coffee")) {
+                        replyEn = "Food and drinks are wonderful topics! What is your favorite meal or favorite beverage?";
+                        replyEs = "¡La comida y bebida son temas maravillosos! ¿Cuál es tu comida o bebida favorita?";
+                    } else if (lower.includes("hobby") || lower.includes("music") || lower.includes("movie") || lower.includes("sport") || lower.includes("game")) {
+                        replyEn = "That sounds fascinating! How long have you been interested in that?";
+                        replyEs = "¡Eso suena fascinante! ¿Hace cuánto tiempo te interesa eso?";
+                    } else if (lower.includes("work") || lower.includes("study") || lower.includes("english") || lower.includes("learn")) {
+                        replyEn = "Learning and practicing daily is the best key to improvement! You are doing great.";
+                        replyEs = "¡Aprender y practicar a diario es la mejor clave para mejorar! Lo estás haciendo genial.";
+                    } else {
+                        replyEn = `That is really interesting! Could you tell me a bit more about that?`;
+                        replyEs = `¡Eso es realmente interesante! ¿Podrías contarme un poco más sobre eso?`;
+                    }
+
+                    addChatMessage('bot', `${replyEn} <br><span class="text-xs opacity-75 italic">(${replyEs})</span>`);
+                    chatThread.push({ role: 'bot', text: replyEn });
+                    speakWithSpanishTranslation(replyEn, replyEs);
+                }
+
+                function startVoiceChatRecognition() {
+                    if (!SpeechRecognition) {
+                        alert("Tu navegador no soporta el reconocimiento de voz.");
+                        return;
+                    }
+                    const micBtn = document.getElementById('chatMicBtn');
+                    const input = document.getElementById('chatInput');
+
+                    const recog = new SpeechRecognition();
+                    recog.lang = 'en-US';
+                    recog.interimResults = false;
+
+                    recog.onstart = () => {
+                        micBtn.classList.add('pulse-recording', 'bg-red-500', 'text-white');
+                        input.placeholder = "Escuchando tu voz...";
+                    };
+
+                    recog.onresult = (e) => {
+                        const transcript = e.results[0][0].transcript;
+                        input.value = transcript;
+                        handleSendMessage();
+                    };
+
+                    recog.onend = () => {
+                        micBtn.classList.remove('pulse-recording', 'bg-red-500', 'text-white');
+                        input.placeholder = "Escribe o habla libremente sobre cualquier tema...";
+                    };
+
+                    recog.start();
+                }
+
+                // --- SHADOWING ---
+                async function nextShadowingPhrase() {
+                    const bank = SHADOWING_BANK[currentUser.level] || SHADOWING_BANK["A1-A2"] || [];
+                    if (!bank || bank.length === 0) {
+                        document.getElementById('shadowingTarget').innerText = "No hay frases de Shadowing disponibles.";
+                        document.getElementById('shadowingTranslation').innerText = "Sube un archivo en Configuración.";
+                        currentShadowingPhrase = null;
+                        return;
+                    }
+                    let available = bank.filter(item => item && item.id && !seenHistory.shadowing.has(item.id));
+                    if (available.length === 0) {
+                        seenHistory.shadowing.clear();
+                        saveSeenHistory();
+                        available = bank;
+                    }
+                    currentShadowingPhrase = available[Math.floor(Math.random() * available.length)];
+                    if (currentShadowingPhrase && currentShadowingPhrase.id) {
+                        seenHistory.shadowing.add(currentShadowingPhrase.id);
+                        saveSeenHistory();
+                    }
+
+                    if (currentShadowingPhrase && (!currentShadowingPhrase.es || currentShadowingPhrase.es === "(Traducción pendiente)")) {
+                        currentShadowingPhrase.es = await fetchAutoTranslation(currentShadowingPhrase.en);
+                    }
+
+                    if (currentShadowingPhrase) {
+                        document.getElementById('shadowingTarget').innerText = currentShadowingPhrase.en || "";
+                        document.getElementById('shadowingTranslation').innerText = currentShadowingPhrase.es || "";
+                    }
+                    document.getElementById('shadowingResultBox').classList.add('hidden');
+                }
+
+                function playShadowingTargetToggle() {
+                    if (currentShadowingPhrase) {
+                        speakWithSpanishTranslation(currentShadowingPhrase.en, currentShadowingPhrase.es);
+                    }
+                }
+
+                function toggleRecordingShadowing() {
+                    if (!SpeechRecognition) {
+                        alert("Tu navegador no soporta reconocimiento de voz.");
+                        return;
+                    }
+
+                    const btn = document.getElementById('btnRecordShadowing');
+                    const statusText = document.getElementById('shadowMicStatus');
+                    const resultBox = document.getElementById('shadowingResultBox');
+                    const spokenTextEl = document.getElementById('shadowSpokenText');
+                    const scoreBadge = document.getElementById('shadowScoreBadge');
+                    const feedbackText = document.getElementById('shadowFeedbackText');
+
+                    if (isRecordingShadowing) return;
+
+                    const recog = new SpeechRecognition();
+                    recog.lang = 'en-US';
+                    recog.interimResults = false;
+
+                    recog.onstart = () => {
+                        isRecordingShadowing = true;
+                        btn.classList.add('pulse-recording');
+                        statusText.innerText = "Escuchando... ¡Habla ahora!";
+                    };
+
+                    recog.onresult = (e) => {
+                        const spoken = e.results[0][0].transcript;
+                        const target = currentShadowingPhrase ? currentShadowingPhrase.en : "";
+
+                        const analysis = evaluateWordByWordPronunciation(spoken, target);
+
+                        resultBox.classList.remove('hidden');
+                        spokenTextEl.innerHTML = analysis.highlightedHtml;
+                        scoreBadge.innerText = `${analysis.score}% Precisión`;
+
+                        if (analysis.score >= 80) {
+                            scoreBadge.className = "px-3 py-1 rounded-full text-xs font-extrabold text-slate-950 bg-greenNeon";
+                            feedbackText.innerText = "¡Excelente pronunciación! Has articulado las palabras con gran fluidez.";
+                        } else if (analysis.score >= 50) {
+                            scoreBadge.className = "px-3 py-1 rounded-full text-xs font-extrabold text-slate-950 bg-yellow-400";
+                            feedbackText.innerText = "¡Buen intento! Las palabras marcadas en rojo necesitan mejor vocalización.";
+                        } else {
+                            scoreBadge.className = "px-3 py-1 rounded-full text-xs font-extrabold text-white bg-red-500";
+                            feedbackText.innerText = "Intenta hablar más despacio y escuchar el modelo de voz nuevamente.";
+                        }
+
+                        currentUser.stats.phrasesPracticed++;
+                        localStorage.setItem(`fluency_user_${currentUser.username}`, JSON.stringify(currentUser));
+                    };
+
+                    recog.onend = () => {
+                        isRecordingShadowing = false;
+                        btn.classList.remove('pulse-recording');
+                        statusText.innerText = "Grabar y Evaluar Mi Voz";
+                    };
+
+                    recog.start();
+                }
+
+                function evaluateWordByWordPronunciation(spokenText, targetText) {
+                    if (!spokenText || !targetText) return { score: 0, highlightedHtml: "..." };
+                    const cleanSpoken = spokenText.toLowerCase().replace(/[^a-z0-9 ]/g, "").split(/\s+/);
+                    const targetWords = targetText.replace(/[^a-zA-Z0-9 ]/g, "").split(/\s+/);
+
+                    let correctCount = 0;
+                    let highlightedWords = [];
+
+                    targetWords.forEach(word => {
+                        const wordClean = word.toLowerCase();
+                        if (cleanSpoken.includes(wordClean)) {
+                            correctCount++;
+                            highlightedWords.push(`<span class="text-greenNeon font-bold">${word}</span>`);
+                        } else {
+                            highlightedWords.push(`<span class="text-red-500 underline font-bold">${word}</span>`);
+                        }
+                    });
+
+                    const score = Math.min(100, Math.round((correctCount / targetWords.length) * 100));
+                    return { score, highlightedHtml: highlightedWords.join(' ') };
+                }
+
+                // --- FRASES EN CONTEXTO (CORREGIDO CONTRA BUCLES E INDEFINIDOS) ---
+                const CONTEXT_CATEGORIES = [
+                    { id: "greetings", label: "1. Saludos" },
+                    { id: "restaurant", label: "2. Comida" },
+                    { id: "workplace", label: "3. Oficina" },
+                    { id: "shopping", label: "4. Compras" },
+                    { id: "travel", label: "5. Viajes" }
+                ];
+
+                function renderContextTabs() {
+                    const container = document.getElementById('contextTabs');
+                    if (!container) return;
+
+                    container.innerHTML = CONTEXT_CATEGORIES.map(cat => `
+                        <button onclick="setContextCategory('${cat.id}')" class="px-3.5 py-2 rounded-xl text-xs font-bold transition border ${currentContextCategory === cat.id ? 'bg-cyanNeon text-slate-950 border-cyanNeon' : 'bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800'}">
+                            ${cat.label}
+                        </button>
+                    `).join('');
+
+                    displayContextPhrase();
+                }
+
+                function setContextCategory(catId) {
+                    currentContextCategory = catId;
+                    renderContextTabs();
+                }
+
+                function toggleShortPhrasesFilter() {
+                    onlyShortPhrases = !onlyShortPhrases;
+                    const btn = document.getElementById('btnFilterShort');
+                    if (btn) {
+                        btn.className = onlyShortPhrases 
+                            ? "px-4 py-2.5 rounded-xl text-xs font-bold transition bg-magentaSoft text-white border border-magentaSoft shadow-md flex items-center space-x-2"
+                            : "px-4 py-2.5 rounded-xl text-xs font-bold transition bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-cyanNeon flex items-center space-x-2";
+                    }
+                    displayContextPhrase();
+                }
+
+                async function displayContextPhrase() {
+                    const bank = FRASES[currentUser.level] || FRASES["A1-A2"] || [];
+                    if (!bank || bank.length === 0) {
+                        document.getElementById('contextEnglish').innerText = "No hay frases en contexto cargadas.";
+                        document.getElementById('contextSpanish').innerText = "Sube un documento o agrega frases en Configuración.";
+                        document.getElementById('verbTenseTag').innerHTML = `<i class="fa-solid fa-tag mr-1"></i>${currentUser.level}`;
+                        currentContextPhrase = null;
+                        return;
+                    }
+
+                    // 1. Filtrar por Categoría
+                    let filtered = bank.filter(p => p && p.category === currentContextCategory);
+                    if (filtered.length === 0) filtered = bank.filter(p => p != null);
+
+                    // 2. Filtro de Cortas (si está activo)
+                    if (onlyShortPhrases) {
+                        const shortOnly = filtered.filter(p => p && p.en && p.en.trim().split(/\s+/).length <= 8);
+                        if (shortOnly.length > 0) {
+                            filtered = shortOnly;
+                        }
+                    }
+
+                    if (filtered.length === 0) {
+                        document.getElementById('contextEnglish').innerText = "Sin frases para este filtro.";
+                        document.getElementById('contextSpanish').innerText = "Intenta desmarcar el filtro de frases cortas o cambiar de categoría.";
+                        currentContextPhrase = null;
+                        return;
+                    }
+
+                    // 3. Filtrar vistos
+                    let available = filtered.filter(item => item && item.id && !seenHistory.context.has(item.id));
+                    if (available.length === 0) {
+                        seenHistory.context.clear();
+                        saveSeenHistory();
+                        available = filtered;
+                    }
+
+                    let item = available[Math.floor(Math.random() * available.length)];
+                    if (!item) {
+                        item = filtered[0];
+                    }
+
+                    currentContextPhrase = item;
+                    if (item && item.id) {
+                        seenHistory.context.add(item.id);
+                        saveSeenHistory();
+                    }
+
+                    if (item && (!item.es || item.es === "(Traducción pendiente)")) {
+                        item.es = await fetchAutoTranslation(item.en);
+                    }
+
+                    if (item) {
+                        const wordCount = (item.en || "").trim().split(/\s+/).length;
+                        document.getElementById('contextEnglish').innerText = item.en || "";
+                        document.getElementById('contextSpanish').innerText = item.es || "";
+                        document.getElementById('verbTenseTag').innerHTML = `<i class="fa-solid fa-tag mr-1"></i>${currentUser.level} • ${item.context || item.category || 'General'} (${wordCount} palabras)`;
+                    }
+                }
+
+                async function rateSrsCard(rating) {
+                    if (!currentContextPhrase || !currentUser) return;
+
+                    let intervalDays = 1;
+                    if (rating === 'good') intervalDays = 3;
+                    if (rating === 'easy') intervalDays = 7;
+
+                    const nextReviewDate = new Date();
+                    nextReviewDate.setDate(nextReviewDate.getDate() + intervalDays);
+
+                    const srsData = {
+                        username: currentUser.username,
+                        cardId: currentContextPhrase.id,
+                        en: currentContextPhrase.en,
+                        es: currentContextPhrase.es,
+                        interval: intervalDays,
+                        nextReview: nextReviewDate.toISOString(),
+                        lastRated: new Date().toISOString()
+                    };
+
+                    SRS_CARDS[currentContextPhrase.id] = srsData;
+                    updateLocalCache();
+
+                    try {
+                        await db.collection("srs_cards").doc(`${currentUser.username}_${currentContextPhrase.id}`).set(srsData);
+                    } catch (e) {
+                        console.error("Error guardando tarjeta SRS en Firestore:", e);
+                    }
+
+                    currentUser.stats.phrasesPracticed++;
+                    localStorage.setItem(`fluency_user_${currentUser.username}`, JSON.stringify(currentUser));
+
+                    nextContextPhrase();
+                }
+
+                function nextContextPhrase() { displayContextPhrase(); }
+                function playContextPhraseToggle() {
+                    const enText = document.getElementById('contextEnglish').innerText;
+                    const esText = document.getElementById('contextSpanish').innerText;
+                    if (enText && !enText.includes("No hay frases")) {
+                        speakWithSpanishTranslation(enText, esText);
+                    }
+                }
+
+                // --- TRADUCTOR REAL ---
+                async function performTranslation() {
+                    const text = document.getElementById('translateInput').value.trim();
+                    if (!text) return;
+
+                    const mode = document.getElementById('translationMode').value;
+                    const outputArea = document.getElementById('translationOutputArea');
+                    const resultText = document.getElementById('translationResultText');
+
+                    outputArea.classList.remove('hidden');
+                    resultText.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Traduciendo...`;
+
+                    let sourceLang = 'auto';
+                    let targetLang = 'es';
+
+                    if (mode === 'es-en') {
+                        sourceLang = 'es';
+                        targetLang = 'en';
+                    } else if (mode === 'en-es') {
+                        sourceLang = 'en';
+                        targetLang = 'es';
+                    } else {
+                        const isSpanish = /[áéíóúñ¿¡]/i.test(text) || /\b(el|la|los|las|un|una|que|con|por|para|como|esta|está|hola|gracias)\b/i.test(text);
+                        sourceLang = isSpanish ? 'es' : 'en';
+                        targetLang = isSpanish ? 'en' : 'es';
+                    }
+
+                    try {
+                        const response = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`);
+                        const data = await response.json();
+
+                        let translated = "";
+                        if (data && data[0]) {
+                            translated = data[0].map(item => item[0]).join('');
+                        }
+
+                        if (!translated) throw new Error("Sin respuesta de traducción");
+
+                        currentTranslationText = translated;
+                        resultText.innerText = translated;
+                    } catch (error) {
+                        console.error("Error en traductor:", error);
+                        resultText.innerText = `Ocurrió un error al realizar la traducción. Por favor verifica tu conexión a internet.`;
+                        currentTranslationText = "";
+                    }
+                }
+
+                function speakTranslation() {
+                    if (currentTranslationText) {
+                        toggleSpeech(currentTranslationText);
+                    }
+                }
+
+                function updateStats() {
+                    if (!currentUser) return;
+                    document.getElementById('statPhrases').innerText = currentUser.stats.phrasesPracticed || 0;
+                    document.getElementById('statStreak').innerText = `${currentUser.stats.streakDays || 1} días`;
+                    document.getElementById('statSrsCount').innerText = Object.keys(SRS_CARDS).length;
+
+                    const listStories = PODCAST_STORIES[currentUser.level] || [];
+                    document.getElementById('statStoriesCount').innerText = `${seenHistory.stories.size} / ${listStories.length}`;
+                }
+
+                function logout() { localStorage.removeItem('fluency_current_user'); location.reload(); }
+    </script>
+</body>
+</html>
