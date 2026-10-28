@@ -95,6 +95,32 @@
 <body class="h-full bg-slate-50 text-slate-800 dark:bg-darkBg dark:text-slate-100 transition-colors duration-300">
 
     <div id="app" class="min-h-screen flex flex-col md:flex-row">
+
+        <!-- MODAL DE CONTRASEÑA DE ADMINISTRADOR -->
+        <div id="adminAuthModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md hidden">
+            <div class="max-w-sm w-full bg-white dark:bg-darkCard rounded-3xl shadow-2xl p-6 border border-slate-200 dark:border-slate-800 relative">
+                <button onclick="closeAdminModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+                <div class="text-center mb-6">
+                    <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-cyanNeon/20 text-cyanNeon mb-3">
+                        <i class="fa-solid fa-user-shield text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-extrabold text-slate-800 dark:text-slate-100">Modo Administradora</h3>
+                    <p class="text-xs text-slate-500 mt-1">Ingresa la clave de administración para acceder a la configuración del sistema.</p>
+                </div>
+                <form onsubmit="handleAdminAuth(event)" class="space-y-4">
+                    <div>
+                        <input type="password" id="adminPasswordInput" placeholder="Contraseña de Admin" required class="w-full px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-cyanNeon text-slate-800 dark:text-slate-100 text-center font-bold tracking-widest">
+                    </div>
+                    <button type="submit" class="w-full py-3 bg-gradient-to-r from-axolotlPurple to-cyanNeon text-white dark:text-slate-950 font-bold rounded-xl shadow-lg transition flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-key"></i>
+                        <span>Desbloquear Configuración</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
         <!-- AUTH SCREEN -->
         <div id="authScreen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md hidden">
             <div class="max-w-md w-full bg-white dark:bg-darkCard rounded-3xl shadow-2xl p-8 border border-slate-200 dark:border-slate-800 relative overflow-hidden">
@@ -209,7 +235,7 @@
                     </button>
                     <button onclick="showSection('configuracion')" id="nav-configuracion" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all">
                         <i class="fa-solid fa-sliders w-5 text-center text-base"></i>
-                        <span>Configuración</span>
+                        <span>Configuración 🔒</span>
                     </button>
                 </nav>
             </div>
@@ -254,7 +280,7 @@
                                     </button>
                                     <button onclick="showSection('configuracion')" class="inline-flex items-center space-x-2 px-6 py-3.5 bg-slate-950/40 text-white font-extrabold rounded-2xl border border-white/30 shadow-lg hover:bg-white/20 transition transform active:scale-95">
                                         <i class="fa-solid fa-sliders"></i>
-                                        <span>Ir a Carga de Archivos</span>
+                                        <span>Ir a Carga de Archivos 🔒</span>
                                     </button>
                                 </div>
                             </div>
@@ -548,10 +574,15 @@
                     </div>
                 </section>
 
-                <!-- ⚙️ CONFIGURACIÓN -->
+                <!-- ⚙️ CONFIGURACIÓN (PROTEGIDA SOLO PARA ADMINISTRADOR) -->
                 <section id="sec-configuracion" class="section-block space-y-6 hidden">
                     <div class="bg-white dark:bg-darkCard rounded-3xl p-6 md:p-8 shadow-xl border border-slate-200 dark:border-slate-800 space-y-6">
-                        <h3 class="text-2xl font-extrabold text-slate-800 dark:text-slate-100 mb-4">Ajustes de Preferencias</h3>
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-2xl font-extrabold text-slate-800 dark:text-slate-100">Ajustes y Panel de Administradora 🔒</h3>
+                            <button onclick="lockAdminSession()" class="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 text-xs font-bold hover:bg-slate-200 transition">
+                                <i class="fa-solid fa-lock mr-1"></i> Cerrar Modo Admin
+                            </button>
+                        </div>
 
                         <div class="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-800">
                             <div>
@@ -725,6 +756,41 @@
                     firebase.initializeApp(firebaseConfig);
                 }
                 const db = firebase.firestore();
+
+                // CLAVE DE ADMINISTRACIÓN CONFIGURADA
+                const ADMIN_PASSWORD = "Admin8529#";
+                let isAdminAuthenticated = false;
+
+                function openAdminModal() {
+                    document.getElementById('adminAuthModal').classList.remove('hidden');
+                    document.getElementById('adminPasswordInput').focus();
+                }
+
+                function closeAdminModal() {
+                    document.getElementById('adminAuthModal').classList.add('hidden');
+                    document.getElementById('adminPasswordInput').value = '';
+                }
+
+                function handleAdminAuth(e) {
+                    e.preventDefault();
+                    const input = document.getElementById('adminPasswordInput').value;
+                    if (input === ADMIN_PASSWORD) {
+                        isAdminAuthenticated = true;
+                        sessionStorage.setItem('fluency_admin_session', 'true');
+                        closeAdminModal();
+                        showSection('configuracion');
+                    } else {
+                        alert("Contraseña de administradora incorrecta.");
+                        document.getElementById('adminPasswordInput').value = '';
+                    }
+                }
+
+                function lockAdminSession() {
+                    isAdminAuthenticated = false;
+                    sessionStorage.removeItem('fluency_admin_session');
+                    alert("Sesión de administración cerrada.");
+                    showSection('inicio');
+                }
 
                 // Datos por defecto
                 let PODCAST_STORIES = {
@@ -1164,6 +1230,11 @@
                     renderAllLumis();
                     loadVoices();
                     if (synth && synth.onvoiceschanged !== undefined) synth.onvoiceschanged = loadVoices;
+                    
+                    if (sessionStorage.getItem('fluency_admin_session') === 'true') {
+                        isAdminAuthenticated = true;
+                    }
+
                     await loadDataFromFirestore();
                     checkExistingSession();
                 };
@@ -1259,6 +1330,12 @@
 
                 function showSection(sectionId) {
                     synth.cancel();
+
+                    if (sectionId === 'configuracion' && !isAdminAuthenticated) {
+                        openAdminModal();
+                        return;
+                    }
+
                     document.querySelectorAll('.section-block').forEach(sec => sec.classList.add('hidden'));
                     const targetSec = document.getElementById(`sec-${sectionId}`);
                     if (targetSec) targetSec.classList.remove('hidden');
@@ -1644,7 +1721,7 @@
                     return { score, highlightedHtml: highlightedWords.join(' ') };
                 }
 
-                // --- FRASES EN CONTEXTO (CORREGIDO CONTRA BUCLES E INDEFINIDOS) ---
+                // --- FRASES EN CONTEXTO ---
                 const CONTEXT_CATEGORIES = [
                     { id: "greetings", label: "1. Saludos" },
                     { id: "restaurant", label: "2. Comida" },
@@ -1692,11 +1769,9 @@
                         return;
                     }
 
-                    // 1. Filtrar por Categoría
                     let filtered = bank.filter(p => p && p.category === currentContextCategory);
                     if (filtered.length === 0) filtered = bank.filter(p => p != null);
 
-                    // 2. Filtro de Cortas (si está activo)
                     if (onlyShortPhrases) {
                         const shortOnly = filtered.filter(p => p && p.en && p.en.trim().split(/\s+/).length <= 8);
                         if (shortOnly.length > 0) {
@@ -1711,7 +1786,6 @@
                         return;
                     }
 
-                    // 3. Filtrar vistos
                     let available = filtered.filter(item => item && item.id && !seenHistory.context.has(item.id));
                     if (available.length === 0) {
                         seenHistory.context.clear();
